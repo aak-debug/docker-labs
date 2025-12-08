@@ -1,9 +1,9 @@
-# Base image
-FROM ubuntu:latest
+FROM nginx:alpine
 
-# Install required packages
-RUN apt update && apt install -y curl
+# Replace default nginx index page
+COPY index.html /usr/share/nginx/html/index.html
 
-# Set a message when container runs
-CMD ["echo", "Hello from my first custom docker image!"]
+# Expose port 80 inside the container
+EXPOSE 80
 
+# Nginx default CMD will run and keep the server alive
