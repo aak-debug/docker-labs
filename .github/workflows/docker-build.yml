@@ -1,4 +1,4 @@
-name: Build and Deploy (SSH)
+name: Build and Deploy (Local Self-hosted)
 
 on:
   push:
@@ -37,21 +37,35 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:${{ github.sha }}
 
+
   deploy:
-    name: Deploy via SSH
+    name: Deploy on Self-hosted Runner
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, local]
+    if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: SSH and deploy
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout (optional, useful for any local scripts)
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub (to allow pulling private images)
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            docker stop devops-labs || true
-            docker rm devops-labs || true
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:latest
-            docker run -d --name devops-labs -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:latest
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Deploy locally: stop, remove, pull, run
+        run: |
+          echo "Stopping old container (if exists)..."
+          docker stop devops-labs || true
+          docker rm devops-labs || true
+
+          echo "Pulling latest image..."
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:latest
+
+          echo "Starting container..."
+          docker run -d --name devops-labs -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/devops-labs:latest
+
+      - name: Show running container
+        run: docker ps --filter "name=devops-labs" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
