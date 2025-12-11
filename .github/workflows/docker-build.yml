@@ -54,7 +54,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Deploy locally: stop, remove, pull, run
+      - name: "Deploy locally: stop, remove, pull, run"
         run: |
           echo "Stopping old container (if exists)..."
           docker stop devops-labs || true
